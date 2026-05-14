@@ -10,7 +10,7 @@ type Entity = {
 };
 
 type WorkerResponse =
-  | { id: number; type: "ready"; device: "webgpu" | "wasm" }
+  | { id: number; type: "ready" }
   | { id: number; type: "progress"; status: string; progress?: number }
   | { id: number; type: "result"; redacted: string; entities: Entity[] }
   | { id: number; type: "error"; error: string };
@@ -26,6 +26,11 @@ Best,
 Maya Chen`;
 
 const hasWebGpu = () => "gpu" in navigator;
+
+const getBackend = () => {
+  const backend = new URLSearchParams(window.location.search).get("backend");
+  return backend === "webgpu" ? backend : "auto";
+};
 
 export function App() {
   const [input, setInput] = useState(sampleText);
@@ -53,11 +58,7 @@ export function App() {
       if (message.id !== requestId.current) return;
 
       if (message.type === "ready") {
-        setStatus(
-          message.device === "webgpu"
-            ? "Running local inference with WebGPU..."
-            : "Running local inference with CPU fallback...",
-        );
+        setStatus("Running local inference...");
         return;
       }
 
@@ -100,10 +101,10 @@ export function App() {
     setStatus(
       hasWebGpu()
         ? "Loading OpenAI Privacy Filter locally..."
-        : "WebGPU unavailable; using local CPU fallback...",
+        : "WebGPU is required for this model.",
     );
     requestId.current += 1;
-    workerRef.current?.postMessage({ id: requestId.current, text: input });
+    workerRef.current?.postMessage({ id: requestId.current, text: input, backend: getBackend() });
   };
 
   const copyOutput = async () => {
@@ -128,8 +129,7 @@ export function App() {
 
       {!hasWebGpu() && (
         <p className="warning">
-          WebGPU is unavailable in this browser. The app will try local CPU inference instead, which
-          is slower.
+          WebGPU is required for this model. Open this app in a recent Chrome or Edge browser.
         </p>
       )}
 

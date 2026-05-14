@@ -29,4 +29,6 @@ The Cloudflare Worker is configured in `wrangler.jsonc` and serves the app at `r
 
 - Input text stays in the browser. No application server is used.
 - Redaction uses model span offsets when provided, preserving original whitespace, line breaks, and paragraph formatting.
+- The model requires WebGPU with a large enough per-buffer limit. WASM/CPU is not currently supported by the quantized ONNX model.
+- The browser downloads model weights on first use and should reuse its browser cache on later visits, subject to browser storage quota and eviction policies.
 - The model can miss or over-redact PII. Use review and domain-specific evaluation for sensitive workflows.

@@ -16,21 +16,21 @@ type Entity = {
 type WorkerRequest = {
   id: number;
   text: string;
+  backend: BackendPreference;
 };
 
 type WorkerResponse =
-  | { id: number; type: "ready"; device: InferenceDevice }
+  | { id: number; type: "ready" }
   | { id: number; type: "progress"; status: string; progress?: number }
   | { id: number; type: "result"; redacted: string; entities: Entity[] }
   | { id: number; type: "error"; error: string };
 
-type InferenceDevice = "webgpu" | "wasm";
+type BackendPreference = "auto" | "webgpu";
 
 type Classifier = (text: string, options: { aggregation_strategy: "simple" }) => Promise<unknown>;
 
 type ClassifierState = {
   classifier: Classifier;
-  device: InferenceDevice;
 };
 
 type GpuNavigator = Navigator & {
@@ -45,7 +45,7 @@ type GpuNavigator = Navigator & {
 
 const minWebGpuBufferSize = 3_000_000_000;
 
-let classifierPromise: ReturnType<typeof createClassifier> | undefined;
+const classifierPromises = new Map<BackendPreference, ReturnType<typeof createClassifier>>();
 
 const labelFor = (entity: Entity) => {
   const raw = entity.entity_group ?? entity.entity ?? "PII";
@@ -105,18 +105,23 @@ const progressCallback = (progress: { status?: string; progress?: number; file?:
 
 const canUseWebGpu = async () => {
   const gpu = (navigator as GpuNavigator).gpu;
-  if (!gpu) return false;
+  if (!gpu) {
+    throw new Error(
+      "This model requires WebGPU. Open this app in a recent Chrome or Edge browser.",
+    );
+  }
 
   const adapter = await gpu.requestAdapter();
+  if (!adapter) {
+    throw new Error("WebGPU is available, but no compatible GPU adapter was found.");
+  }
+
   const maxBufferSize = adapter?.limits?.maxBufferSize ?? 0;
 
   if (maxBufferSize < minWebGpuBufferSize) {
-    postMessage({
-      id: 0,
-      type: "progress",
-      status: "GPU buffer limit is too low; using local CPU fallback",
-    } satisfies WorkerResponse);
-    return false;
+    throw new Error(
+      `This GPU cannot load the local model. WebGPU maxBufferSize is ${maxBufferSize}, but at least ${minWebGpuBufferSize} is required.`,
+    );
   }
 
   return true;
@@ -127,40 +132,42 @@ const isWebGpuBufferError = (error: unknown) => {
   return message.includes("WebGPU validation failed") && message.includes("max buffer size");
 };
 
-async function loadClassifier(device: InferenceDevice) {
+async function loadClassifier() {
   return (await pipeline("token-classification", "openai/privacy-filter", {
-    device,
+    device: "webgpu",
     dtype: "q4",
     progress_callback: progressCallback,
   })) as Classifier;
 }
 
-async function createClassifier(): Promise<ClassifierState> {
-  if (await canUseWebGpu()) {
-    try {
-      return { classifier: await loadClassifier("webgpu"), device: "webgpu" };
-    } catch (error) {
-      if (!isWebGpuBufferError(error)) throw error;
+async function createClassifier(backend: BackendPreference): Promise<ClassifierState> {
+  if (backend !== "auto" && backend !== "webgpu") throw new Error("Unsupported backend.");
 
-      postMessage({
-        id: 0,
-        type: "progress",
-        status: "WebGPU buffer limit hit; retrying with local CPU fallback",
-      } satisfies WorkerResponse);
-    }
+  await canUseWebGpu();
+
+  try {
+    return { classifier: await loadClassifier() };
+  } catch (error) {
+    if (!isWebGpuBufferError(error)) throw error;
+
+    throw new Error(
+      "This GPU cannot load the local model because its WebGPU buffer limit is too low.",
+    );
   }
-
-  return { classifier: await loadClassifier("wasm"), device: "wasm" };
 }
 
 self.onmessage = async (event: MessageEvent<WorkerRequest>) => {
-  const { id, text } = event.data;
+  const { id, text, backend } = event.data;
 
   try {
-    classifierPromise ??= createClassifier();
-    const { classifier, device } = await classifierPromise;
+    if (!classifierPromises.has(backend)) {
+      classifierPromises.set(backend, createClassifier(backend));
+    }
 
-    postMessage({ id, type: "ready", device } satisfies WorkerResponse);
+    const classifierPromise = classifierPromises.get(backend)!;
+    const { classifier } = await classifierPromise;
+
+    postMessage({ id, type: "ready" } satisfies WorkerResponse);
 
     const output = (await classifier(text, {
       aggregation_strategy: "simple",
