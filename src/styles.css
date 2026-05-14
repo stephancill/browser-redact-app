@@ -1,0 +1,197 @@
+:root {
+  color: #111;
+  background: #fff;
+  font-family:
+    system-ui,
+    -apple-system,
+    BlinkMacSystemFont,
+    "Segoe UI",
+    sans-serif;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  min-width: 320px;
+}
+
+button,
+textarea {
+  font: inherit;
+}
+
+.shell {
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 24px;
+}
+
+.hero {
+  display: flex;
+  justify-content: space-between;
+  gap: 24px;
+  margin-bottom: 16px;
+}
+
+.eyebrow {
+  margin: 0 0 6px;
+  font-size: 0.8rem;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+h1,
+h2,
+p {
+  margin-top: 0;
+}
+
+h1 {
+  margin-bottom: 8px;
+  font-size: 2rem;
+  line-height: 1.1;
+}
+
+.lede {
+  max-width: 760px;
+  margin-bottom: 0;
+  color: #444;
+  line-height: 1.4;
+}
+
+.statusCard {
+  min-width: 220px;
+  color: #444;
+  font-size: 0.9rem;
+  text-align: right;
+}
+
+.dot,
+.pulse {
+  display: none;
+}
+
+.warning,
+.error {
+  margin-bottom: 12px;
+  padding: 10px;
+  border: 1px solid #ccc;
+}
+
+.error {
+  border-color: #b00020;
+  color: #b00020;
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+button {
+  padding: 8px 12px;
+  border: 1px solid #111;
+  background: #111;
+  color: #fff;
+  cursor: pointer;
+}
+
+button.secondary {
+  background: #fff;
+  color: #111;
+}
+
+button:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+.panes {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.pane {
+  display: grid;
+  gap: 6px;
+}
+
+.pane span,
+.details h2 {
+  font-size: 0.9rem;
+  font-weight: 700;
+}
+
+textarea {
+  min-height: 60vh;
+  resize: vertical;
+  padding: 12px;
+  border: 1px solid #aaa;
+  outline: none;
+  color: #111;
+  background: #fff;
+  font-family: ui-monospace, SFMono-Regular, Consolas, "Liberation Mono", monospace;
+  font-size: 0.95rem;
+  line-height: 1.5;
+  white-space: pre-wrap;
+}
+
+textarea:focus {
+  border-color: #111;
+}
+
+.details {
+  margin-top: 16px;
+  padding-top: 12px;
+  border-top: 1px solid #ddd;
+}
+
+.details h2 {
+  margin-bottom: 8px;
+}
+
+.details p {
+  margin-bottom: 0;
+  color: #555;
+}
+
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.chip {
+  padding: 3px 6px;
+  border: 1px solid #ccc;
+  font-size: 0.82rem;
+}
+
+@media (max-width: 840px) {
+  .shell {
+    padding: 16px;
+  }
+
+  .hero {
+    display: block;
+  }
+
+  .statusCard {
+    margin-top: 12px;
+    text-align: left;
+  }
+
+  .panes {
+    grid-template-columns: 1fr;
+  }
+
+  textarea {
+    min-height: 38vh;
+  }
+}

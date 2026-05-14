@@ -1,0 +1,29 @@
+{
+  "name": "pii-remover-web",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc -b && vite build",
+    "deploy": "bun run build && wrangler deploy",
+    "lint": "oxlint .",
+    "format": "oxfmt --write .",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "@huggingface/transformers": "latest",
+    "@vitejs/plugin-react": "latest",
+    "react": "latest",
+    "react-dom": "latest",
+    "typescript": "latest",
+    "vite": "latest"
+  },
+  "devDependencies": {
+    "@types/react": "^19.2.14",
+    "@types/react-dom": "^19.2.3",
+    "oxfmt": "latest",
+    "oxlint": "latest",
+    "wrangler": "^4.90.0"
+  }
+}

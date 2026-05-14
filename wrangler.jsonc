@@ -1,0 +1,15 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "browser-redact-app",
+  "compatibility_date": "2026-05-14",
+  "assets": {
+    "directory": "./dist",
+    "not_found_handling": "single-page-application",
+  },
+  "routes": [
+    {
+      "pattern": "redact.stupidtech.net",
+      "custom_domain": true,
+    },
+  ],
+}
