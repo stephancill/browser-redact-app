@@ -36,15 +36,7 @@ textarea {
   margin-bottom: 16px;
 }
 
-.eyebrow {
-  margin: 0 0 6px;
-  font-size: 0.8rem;
-  font-weight: 700;
-  text-transform: uppercase;
-}
-
 h1,
-h2,
 p {
   margin-top: 0;
 }
@@ -122,8 +114,7 @@ button:disabled {
   gap: 6px;
 }
 
-.pane span,
-.details h2 {
+.pane span {
   font-size: 0.9rem;
   font-weight: 700;
 }
@@ -144,33 +135,6 @@ textarea {
 
 textarea:focus {
   border-color: #111;
-}
-
-.details {
-  margin-top: 16px;
-  padding-top: 12px;
-  border-top: 1px solid #ddd;
-}
-
-.details h2 {
-  margin-bottom: 8px;
-}
-
-.details p {
-  margin-bottom: 0;
-  color: #555;
-}
-
-.chips {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-}
-
-.chip {
-  padding: 3px 6px;
-  border: 1px solid #ccc;
-  font-size: 0.82rem;
 }
 
 @media (max-width: 840px) {

@@ -1,6 +1,6 @@
-# Local PII Remover
+# Stupid Redact
 
-Vite + React app that runs `openai/privacy-filter` locally in the browser with Transformers.js and WebGPU.
+Vite + React app that redacts PII from text locally in the browser with `openai/privacy-filter` and Transformers.js.
 
 ## Run
 

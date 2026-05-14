@@ -10,7 +10,7 @@ type Entity = {
 };
 
 type WorkerResponse =
-  | { id: number; type: "ready" }
+  | { id: number; type: "ready"; device: "webgpu" | "wasm" }
   | { id: number; type: "progress"; status: string; progress?: number }
   | { id: number; type: "result"; redacted: string; entities: Entity[] }
   | { id: number; type: "error"; error: string };
@@ -30,7 +30,6 @@ const hasWebGpu = () => "gpu" in navigator;
 export function App() {
   const [input, setInput] = useState(sampleText);
   const [output, setOutput] = useState("");
-  const [entities, setEntities] = useState<Entity[]>([]);
   const [status, setStatus] = useState("Model not loaded");
   const [isRunning, setIsRunning] = useState(false);
   const [error, setError] = useState("");
@@ -54,13 +53,16 @@ export function App() {
       if (message.id !== requestId.current) return;
 
       if (message.type === "ready") {
-        setStatus("Running local inference...");
+        setStatus(
+          message.device === "webgpu"
+            ? "Running local inference with WebGPU..."
+            : "Running local inference with CPU fallback...",
+        );
         return;
       }
 
       if (message.type === "result") {
         setOutput(message.redacted);
-        setEntities(message.entities);
         setStatus(
           `Redacted ${message.entities.length} span${message.entities.length === 1 ? "" : "s"}`,
         );
@@ -95,7 +97,11 @@ export function App() {
     setCopied(false);
     setError("");
     setIsRunning(true);
-    setStatus(hasWebGpu() ? "Loading OpenAI Privacy Filter locally..." : "WebGPU is unavailable");
+    setStatus(
+      hasWebGpu()
+        ? "Loading OpenAI Privacy Filter locally..."
+        : "WebGPU unavailable; using local CPU fallback...",
+    );
     requestId.current += 1;
     workerRef.current?.postMessage({ id: requestId.current, text: input });
   };
@@ -109,11 +115,9 @@ export function App() {
     <main className="shell">
       <section className="hero">
         <div>
-          <p className="eyebrow">Browser-local PII redaction</p>
-          <h1>OpenAI Privacy Filter</h1>
+          <h1>Stupid Redact</h1>
           <p className="lede">
-            Paste text on the left, run the local WebGPU model, and copy redacted text from the
-            right. Original spacing, line breaks, and paragraph structure are preserved.
+            Redact PII from text on your machine without sending data to a server.
           </p>
         </div>
         <div className="statusCard">
@@ -124,8 +128,8 @@ export function App() {
 
       {!hasWebGpu() && (
         <p className="warning">
-          This app uses Transformers.js with WebGPU. Open it in a browser with WebGPU enabled, such
-          as a recent Chrome or Edge build.
+          WebGPU is unavailable in this browser. The app will try local CPU inference instead, which
+          is slower.
         </p>
       )}
 
@@ -159,22 +163,6 @@ export function App() {
             spellCheck={false}
           />
         </label>
-      </section>
-
-      <section className="details">
-        <h2>Detected spans</h2>
-        {entities.length === 0 ? (
-          <p>No spans detected yet.</p>
-        ) : (
-          <div className="chips">
-            {entities.map((entity, index) => (
-              <span className="chip" key={`${entity.entity_group ?? entity.entity}-${index}`}>
-                {(entity.entity_group ?? entity.entity ?? "PII").replace(/^[BIES]-/, "")}
-                {typeof entity.score === "number" ? ` ${(entity.score * 100).toFixed(1)}%` : ""}
-              </span>
-            ))}
-          </div>
-        )}
       </section>
     </main>
   );
