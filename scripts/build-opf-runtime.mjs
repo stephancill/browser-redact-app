@@ -44,13 +44,19 @@ run(python, [
 
 writeFileSync(
   runnerPath,
-  `from opf.__main__ import main\n\nif __name__ == "__main__":\n    main()\n`,
+  `import multiprocessing\nfrom opf.__main__ import main\n\nif __name__ == "__main__":\n    multiprocessing.freeze_support()\n    main()\n`,
 );
 
 run(pyinstaller, [
   "--onefile",
   "--name",
   "opf-runner",
+  "--collect-all",
+  "tiktoken",
+  "--collect-all",
+  "tiktoken_ext",
+  "--hidden-import",
+  "tiktoken_ext.openai_public",
   "--distpath",
   runtimeDir,
   "--workpath",

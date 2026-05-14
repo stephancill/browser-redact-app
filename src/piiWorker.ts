@@ -13,6 +13,13 @@ type Entity = {
   end?: number;
 };
 
+type RedactionSpan = {
+  start: number;
+  end: number;
+  label: string;
+  placeholder: string;
+};
+
 type WorkerRequest = {
   id: number;
   text: string;
@@ -22,7 +29,7 @@ type WorkerRequest = {
 type WorkerResponse =
   | { id: number; type: "ready" }
   | { id: number; type: "progress"; status: string; progress?: number }
-  | { id: number; type: "result"; redacted: string; entities: Entity[] }
+  | { id: number; type: "result"; redacted: string; entities: Entity[]; spans: RedactionSpan[] }
   | { id: number; type: "error"; error: string };
 
 type BackendPreference = "auto" | "webgpu";
@@ -67,15 +74,21 @@ const redactWithOffsets = ({ text, entities }: { text: string; entities: Entity[
     return redactByWord({ text, entities });
   }
 
-  return spans.reduce(
+  const redacted = spans.reduce(
     (value, span) => `${value.slice(0, span.start)}${span.label}${value.slice(span.end)}`,
     text,
   );
+
+  return {
+    redacted,
+    spans: [...spans].reverse().map((span) => ({ ...span, placeholder: span.label })),
+  };
 };
 
 const redactByWord = ({ text, entities }: { text: string; entities: Entity[] }) => {
   let redacted = text;
   let searchFrom = 0;
+  const spans: RedactionSpan[] = [];
 
   for (const entity of entities) {
     const word = entity.word?.trim();
@@ -85,11 +98,12 @@ const redactByWord = ({ text, entities }: { text: string; entities: Entity[] }) 
     if (index === -1) continue;
 
     const label = labelFor(entity);
+    spans.push({ start: index, end: index + word.length, label, placeholder: label });
     redacted = `${redacted.slice(0, index)}${label}${redacted.slice(index + word.length)}`;
     searchFrom = index + label.length;
   }
 
-  return redacted;
+  return { redacted, spans };
 };
 
 const progressCallback = (progress: { status?: string; progress?: number; file?: string }) => {
@@ -173,11 +187,14 @@ self.onmessage = async (event: MessageEvent<WorkerRequest>) => {
       aggregation_strategy: "simple",
     })) as Entity[];
 
+    const redaction = redactWithOffsets({ text, entities: output });
+
     postMessage({
       id,
       type: "result",
-      redacted: redactWithOffsets({ text, entities: output }),
+      redacted: redaction.redacted,
       entities: output,
+      spans: redaction.spans,
     } satisfies WorkerResponse);
   } catch (error) {
     postMessage({

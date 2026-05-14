@@ -71,5 +71,5 @@ The Cloudflare Worker is configured in `wrangler.jsonc` and serves the app at `r
 - The web build requires WebGPU with a large enough per-buffer limit. WASM/CPU is not currently supported by the quantized ONNX model.
 - The browser downloads model weights on first use and should reuse its browser cache on later visits, subject to browser storage quota and eviction policies.
 - The desktop app runs a downloaded OPF runtime locally, so it can support machines that cannot run the browser WebGPU path.
-- The desktop app downloads the runtime and model on demand to the app data directory instead of bundling them in the installer.
+- The desktop app downloads the runtime and model on demand to the app data directory instead of bundling them in the installer. OPF stores the checkpoint under the app data runtime home at `.opf/privacy_filter`.
 - The model can miss or over-redact PII. Use review and domain-specific evaluation for sensitive workflows.

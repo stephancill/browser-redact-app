@@ -7,6 +7,7 @@
   "scripts": {
     "dev": "vite",
     "desktop:dev": "concurrently -k \"vite --host 127.0.0.1 --port 5199 --strictPort\" \"wait-on http://127.0.0.1:5199 && cross-env ELECTRON_START_URL=http://127.0.0.1:5199 electron electron/main.cjs\"",
+    "desktop:e2e": "bun run build && node scripts/e2e-electron.mjs",
     "build": "tsc -b && vite build",
     "desktop:runtime": "node scripts/build-opf-runtime.mjs",
     "desktop:build": "bun run build && electron-builder --publish never",
@@ -18,6 +19,7 @@
   "dependencies": {
     "@huggingface/transformers": "latest",
     "@vitejs/plugin-react": "latest",
+    "jszip": "^3.10.1",
     "react": "latest",
     "react-dom": "latest",
     "typescript": "latest",
@@ -32,6 +34,7 @@
     "electron-builder": "^26.8.1",
     "oxfmt": "latest",
     "oxlint": "latest",
+    "playwright-core": "^1.60.0",
     "wait-on": "^9.0.10",
     "wrangler": "^4.90.0"
   },
