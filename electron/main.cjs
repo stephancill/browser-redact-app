@@ -1,10 +1,20 @@
 const { app, BrowserWindow, ipcMain, shell } = require("electron");
 const { spawn } = require("node:child_process");
-const { mkdirSync } = require("node:fs");
+const {
+  chmodSync,
+  createWriteStream,
+  existsSync,
+  mkdirSync,
+  renameSync,
+  rmSync,
+} = require("node:fs");
+const { get } = require("node:https");
 const path = require("node:path");
 
 const isDev = !app.isPackaged;
 const opfExecutableName = process.platform === "win32" ? "opf-runner.exe" : "opf-runner";
+const runtimeAssetName = `opf-runner-${process.platform}-${process.arch}${process.platform === "win32" ? ".exe" : ""}`;
+const runtimeDownloadUrl = `https://github.com/stephancill/browser-redact-app/releases/latest/download/${runtimeAssetName}`;
 
 function createWindow() {
   const window = new BrowserWindow({
@@ -46,14 +56,51 @@ function parseOpfOutput(stdout) {
   return text;
 }
 
-function getOpfCommand() {
+async function downloadFile(url, destination) {
+  await new Promise((resolve, reject) => {
+    const tempDestination = `${destination}.download`;
+    rmSync(tempDestination, { force: true });
+
+    const request = get(url, (response) => {
+      if ([301, 302, 303, 307, 308].includes(response.statusCode ?? 0)) {
+        response.resume();
+        downloadFile(response.headers.location, destination).then(resolve, reject);
+        return;
+      }
+
+      if (response.statusCode !== 200) {
+        response.resume();
+        reject(new Error(`Failed to download runtime: HTTP ${response.statusCode}`));
+        return;
+      }
+
+      const file = createWriteStream(tempDestination);
+      response.pipe(file);
+      file.on("finish", () => {
+        file.close(() => {
+          renameSync(tempDestination, destination);
+          if (process.platform !== "win32") chmodSync(destination, 0o755);
+          resolve();
+        });
+      });
+      file.on("error", reject);
+    });
+
+    request.on("error", reject);
+  });
+}
+
+async function getOpfCommand() {
   if (process.env.OPF_BIN) return { command: process.env.OPF_BIN, args: [] };
 
-  const bundledPath = app.isPackaged
-    ? path.join(process.resourcesPath, "runtime", opfExecutableName)
-    : path.join(__dirname, "..", "runtime", opfExecutableName);
+  const runtimePath = path.join(app.getPath("userData"), "runtime", opfExecutableName);
+  mkdirSync(path.dirname(runtimePath), { recursive: true });
 
-  return { command: bundledPath, args: [] };
+  if (!existsSync(runtimePath)) {
+    await downloadFile(runtimeDownloadUrl, runtimePath);
+  }
+
+  return { command: runtimePath, args: [] };
 }
 
 function getCheckpointPath() {
@@ -67,8 +114,9 @@ ipcMain.handle("redact:text", async (_event, text) => {
     return { redacted: "", spanCount: 0 };
   }
 
+  const opf = await getOpfCommand();
+
   return await new Promise((resolve, reject) => {
-    const opf = getOpfCommand();
     const child = spawn(opf.command, [...opf.args, "--device", "cpu", "--output-mode", "typed"], {
       env: { ...process.env, NO_COLOR: "1", OPF_CHECKPOINT: getCheckpointPath() },
       stdio: ["pipe", "pipe", "pipe"],

@@ -13,7 +13,7 @@ Open the local Vite URL in a WebGPU-capable browser such as recent Chrome or Edg
 
 ## Desktop Development
 
-The Electron app uses a bundled OPF runtime in packaged builds. For local development, build that runtime first:
+The Electron app downloads the OPF runtime on demand in packaged builds. For local development, build that runtime first:
 
 ```sh
 bun run desktop:runtime
@@ -35,9 +35,9 @@ Build a platform-specific installer:
 bun run desktop:build
 ```
 
-The installer includes the local redaction runtime under Electron resources. End users only need to download and install the app.
+The installer is small. End users only need to download and install the app.
 
-The model checkpoint is downloaded on first use into the app data directory and reused after that. First use requires an internet connection.
+The OPF runtime and model checkpoint are downloaded on first use into the app data directory and reused after that. First use requires an internet connection.
 
 The runtime is platform-specific. Build the installer on each target OS, or use CI runners for macOS, Windows, and Linux.
 
@@ -70,6 +70,6 @@ The Cloudflare Worker is configured in `wrangler.jsonc` and serves the app at `r
 - Redaction uses model span offsets when provided, preserving original whitespace, line breaks, and paragraph formatting.
 - The web build requires WebGPU with a large enough per-buffer limit. WASM/CPU is not currently supported by the quantized ONNX model.
 - The browser downloads model weights on first use and should reuse its browser cache on later visits, subject to browser storage quota and eviction policies.
-- The desktop app runs the bundled OPF runtime locally, so it can support machines that cannot run the browser WebGPU path.
-- The desktop app downloads the model on demand to the app data directory instead of bundling the multi-GB checkpoint in the installer.
+- The desktop app runs a downloaded OPF runtime locally, so it can support machines that cannot run the browser WebGPU path.
+- The desktop app downloads the runtime and model on demand to the app data directory instead of bundling them in the installer.
 - The model can miss or over-redact PII. Use review and domain-specific evaluation for sensitive workflows.

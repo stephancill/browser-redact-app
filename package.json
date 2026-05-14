@@ -9,7 +9,7 @@
     "desktop:dev": "concurrently -k \"vite --host 127.0.0.1 --port 5199 --strictPort\" \"wait-on http://127.0.0.1:5199 && cross-env ELECTRON_START_URL=http://127.0.0.1:5199 electron electron/main.cjs\"",
     "build": "tsc -b && vite build",
     "desktop:runtime": "node scripts/build-opf-runtime.mjs",
-    "desktop:build": "bun run desktop:runtime && bun run build && electron-builder --publish never",
+    "desktop:build": "bun run build && electron-builder --publish never",
     "deploy": "bun run build && wrangler deploy",
     "lint": "oxlint .",
     "format": "oxfmt --write .",
@@ -42,12 +42,6 @@
       "dist/**",
       "electron/**",
       "package.json"
-    ],
-    "extraResources": [
-      {
-        "from": "runtime",
-        "to": "runtime"
-      }
     ],
     "mac": {
       "category": "public.app-category.productivity",

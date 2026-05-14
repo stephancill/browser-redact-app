@@ -46,6 +46,19 @@ jobs:
       - name: Install dependencies
         run: bun install --frozen-lockfile
 
+      - name: Build OPF runtime
+        run: bun run desktop:runtime
+
+      - name: Stage OPF runtime
+        shell: bash
+        run: |
+          mkdir -p runtime-release
+          if [ "${{ runner.os }}" = "Windows" ]; then
+            cp runtime/opf-runner.exe runtime-release/opf-runner-win32-x64.exe
+          else
+            cp runtime/opf-runner runtime-release/opf-runner-darwin-x64
+          fi
+
       - name: Build desktop app
         run: bun run desktop:build
 
@@ -58,6 +71,7 @@ jobs:
             release/*.zip
             release/*.exe
             release/*.blockmap
+            runtime-release/*
           if-no-files-found: error
 
   release:
