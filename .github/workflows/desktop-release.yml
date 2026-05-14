@@ -1,0 +1,83 @@
+name: Desktop Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: Release tag, for example v0.1.0
+        required: false
+        type: string
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    name: Build ${{ matrix.name }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: macOS
+            os: macos-13
+            artifact: macos
+          - name: Windows
+            os: windows-latest
+            artifact: windows
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+
+      - name: Build desktop app
+        run: bun run desktop:build
+
+      - name: Upload build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: stupid-redact-${{ matrix.artifact }}
+          path: |
+            release/*.dmg
+            release/*.zip
+            release/*.exe
+            release/*.blockmap
+          if-no-files-found: error
+
+  release:
+    name: Publish GitHub Release
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+
+      - name: Create release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ inputs.tag || (github.ref_type == 'tag' && github.ref_name) || format('desktop-{0}', github.run_number) }}
+          name: Stupid Redact ${{ inputs.tag || (github.ref_type == 'tag' && github.ref_name) || format('desktop-{0}', github.run_number) }}
+          files: artifacts/**/*
+          make_latest: true
+          body: |
+            Desktop builds for Stupid Redact.
+
+            The app runs redaction locally on your machine. Browser-incompatible users should install one of these desktop builds.

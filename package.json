@@ -3,9 +3,13 @@
   "version": "0.0.0",
   "private": true,
   "type": "module",
+  "main": "electron/main.cjs",
   "scripts": {
     "dev": "vite",
+    "desktop:dev": "concurrently -k \"vite --host 127.0.0.1 --port 5199 --strictPort\" \"wait-on http://127.0.0.1:5199 && cross-env ELECTRON_START_URL=http://127.0.0.1:5199 electron electron/main.cjs\"",
     "build": "tsc -b && vite build",
+    "desktop:runtime": "node scripts/build-opf-runtime.mjs",
+    "desktop:build": "bun run desktop:runtime && bun run build && electron-builder",
     "deploy": "bun run build && wrangler deploy",
     "lint": "oxlint .",
     "format": "oxfmt --write .",
@@ -22,8 +26,51 @@
   "devDependencies": {
     "@types/react": "^19.2.14",
     "@types/react-dom": "^19.2.3",
+    "concurrently": "^9.2.1",
+    "cross-env": "^10.1.0",
+    "electron": "^42.0.1",
+    "electron-builder": "^26.8.1",
     "oxfmt": "latest",
     "oxlint": "latest",
+    "wait-on": "^9.0.10",
     "wrangler": "^4.90.0"
+  },
+  "build": {
+    "appId": "net.stupidtech.redact",
+    "productName": "Stupid Redact",
+    "files": [
+      "dist/**",
+      "electron/**",
+      "package.json"
+    ],
+    "extraResources": [
+      {
+        "from": "runtime",
+        "to": "runtime"
+      }
+    ],
+    "mac": {
+      "category": "public.app-category.productivity",
+      "target": [
+        "dmg",
+        "zip"
+      ]
+    },
+    "win": {
+      "target": [
+        "nsis",
+        "zip"
+      ]
+    },
+    "linux": {
+      "target": [
+        "AppImage",
+        "tar.gz"
+      ],
+      "category": "Utility"
+    },
+    "directories": {
+      "output": "release"
+    }
   }
 }

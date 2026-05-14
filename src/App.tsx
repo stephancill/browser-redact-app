@@ -32,6 +32,9 @@ const getBackend = () => {
   return backend === "webgpu" ? backend : "auto";
 };
 
+const isDesktop = () => Boolean(window.stupidRedact);
+const releaseUrl = "https://github.com/stephancill/browser-redact-app/releases/latest";
+
 export function App() {
   const [input, setInput] = useState(sampleText);
   const [output, setOutput] = useState("");
@@ -98,12 +101,33 @@ export function App() {
     setCopied(false);
     setError("");
     setIsRunning(true);
+    requestId.current += 1;
+
+    if (window.stupidRedact) {
+      setStatus("Running local inference...");
+      window.stupidRedact
+        .redact(input)
+        .then((result) => {
+          setOutput(result.redacted);
+          setStatus(
+            typeof result.spanCount === "number"
+              ? `Redacted ${result.spanCount} spans`
+              : "Redacted text",
+          );
+        })
+        .catch((error: unknown) => {
+          setError(error instanceof Error ? error.message : "Local inference failed");
+          setStatus("Inference failed");
+        })
+        .finally(() => setIsRunning(false));
+      return;
+    }
+
     setStatus(
       hasWebGpu()
         ? "Loading OpenAI Privacy Filter locally..."
         : "WebGPU is required for this model.",
     );
-    requestId.current += 1;
     workerRef.current?.postMessage({ id: requestId.current, text: input, backend: getBackend() });
   };
 
@@ -127,9 +151,10 @@ export function App() {
         </div>
       </section>
 
-      {!hasWebGpu() && (
+      {!isDesktop() && !hasWebGpu() && (
         <p className="warning">
-          WebGPU is required for this model. Open this app in a recent Chrome or Edge browser.
+          This browser cannot run the local model. Download the desktop app from{" "}
+          <a href={releaseUrl}>GitHub Releases</a>.
         </p>
       )}
 
