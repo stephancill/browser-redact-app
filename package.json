@@ -41,6 +41,7 @@
   "build": {
     "appId": "net.stupidtech.redact",
     "productName": "Stupid Redact",
+    "icon": "build/icon",
     "files": [
       "dist/**",
       "electron/**",
